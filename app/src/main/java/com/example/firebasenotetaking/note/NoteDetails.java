@@ -1,10 +1,10 @@
-package com.example.firebasenotetaking;
+package com.example.firebasenotetaking.note;
 
 import android.content.Intent;
 import android.os.Bundle;
 
+import com.example.firebasenotetaking.R;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -25,9 +25,9 @@ public class NoteDetails extends AppCompatActivity {
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        Intent data = getIntent();
+        final Intent data = getIntent();
 
-        TextView title = findViewById(R.id.noteDetailsTitle);
+        final TextView title = findViewById(R.id.noteDetailsTitle);
         TextView content = findViewById(R.id.noteDetailsContent);
         content.setMovementMethod(new ScrollingMovementMethod());
 
@@ -40,8 +40,11 @@ public class NoteDetails extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+               Intent intent = new Intent(view.getContext(), EditNote.class);
+               intent.putExtra("title",data.getStringExtra("title"));
+               intent.putExtra("content",data.getStringExtra("content"));
+               intent.putExtra("noteId",data.getStringExtra("noteId"));
+               startActivity(intent);
             }
         });
     }

@@ -8,7 +8,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
-import com.example.firebasenotetaking.NoteDetails;
+import com.example.firebasenotetaking.note.NoteDetails;
 import com.example.firebasenotetaking.R;
 import java.util.ArrayList;
 import java.util.List;

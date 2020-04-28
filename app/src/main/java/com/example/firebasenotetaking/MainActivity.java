@@ -11,18 +11,31 @@ import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.example.firebasenotetaking.auth.LoginActivity;
 import com.example.firebasenotetaking.model.Adapter;
 import com.example.firebasenotetaking.model.Note;
+import com.example.firebasenotetaking.note.AddNote;
+import com.example.firebasenotetaking.note.EditNote;
+import com.example.firebasenotetaking.note.NoteDetails;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
@@ -37,6 +50,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     Adapter adapter;
     RecyclerView list_notes;
     FirebaseFirestore fStore;
+    FirebaseUser user;
+    FirebaseAuth fAuth;
     FirestoreRecyclerAdapter<Note,NoteViewHolder> noteAdapter;
 
 
@@ -59,19 +74,28 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         List<String> title = new ArrayList<>();
         List<String> content = new ArrayList<>();
 
+
+        View headerView = navigationView.getHeaderView(0);
+        TextView username = headerView.findViewById(R.id.userDisplayName);
+        TextView useremail = headerView.findViewById(R.id.userDisplayEmail);
+
+
+        fAuth = FirebaseAuth.getInstance();
+        user = fAuth.getCurrentUser();
         fStore = FirebaseFirestore.getInstance();
-        Query query = fStore.collection("notes").orderBy("title", Query.Direction.DESCENDING);
+        Query query = fStore.collection("notes").document(user.getUid()).collection("myNotes").orderBy("title", Query.Direction.DESCENDING);
         FirestoreRecyclerOptions<Note> allNotes = new FirestoreRecyclerOptions.Builder<Note>()
                 .setQuery(query,Note.class)
                 .build();
 
         noteAdapter = new FirestoreRecyclerAdapter<Note, NoteViewHolder>(allNotes) {
             @Override
-            protected void onBindViewHolder(@NonNull NoteViewHolder noteViewHolder, int i, @NonNull final Note note) {
+            protected void onBindViewHolder(@NonNull NoteViewHolder noteViewHolder, final int i, @NonNull final Note note) {
                 noteViewHolder.noteTitle.setText(note.getTitle());
                 noteViewHolder.noteContent.setText(note.getContent());
                 final int code = getRandomColor();
                 noteViewHolder.mcardView.setCardBackgroundColor(noteViewHolder.view.getResources().getColor(code,null));
+                final String docId = noteAdapter.getSnapshots().getSnapshot(i).getId();
 
                 noteViewHolder.view.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -80,7 +104,48 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         intent.putExtra("title",note.getTitle());
                         intent.putExtra("content",note.getContent());
                         intent.putExtra("code",code);
+                        intent.putExtra("noteId",docId);
                         v.getContext().startActivity(intent);
+                    }
+                });
+
+                ImageView menuIcon = noteViewHolder.view.findViewById(R.id.menuIcon);
+                menuIcon.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(final View v) {
+                        final String docId = noteAdapter.getSnapshots().getSnapshot(i).getId();
+                        PopupMenu menu = new PopupMenu(v.getContext(),v);
+                        menu.setGravity(Gravity.END);
+                        menu.getMenu().add("Edit").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                            @Override
+                            public boolean onMenuItemClick(MenuItem item) {
+                                Intent intent = new Intent(v.getContext(), EditNote.class);
+                                intent.putExtra("title",note.getTitle());
+                                intent.putExtra("content",note.getContent());
+                                intent.putExtra("noteId",docId);
+                                startActivity(intent);
+                                return false;
+                            }
+                        });
+                        menu.getMenu().add("Delete").setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                            @Override
+                            public boolean onMenuItemClick(MenuItem item) {
+                                DocumentReference docRef = fStore.collection("notes").document(docId);
+                                docRef.delete().addOnSuccessListener(new OnSuccessListener<Void>() {
+                                    @Override
+                                    public void onSuccess(Void aVoid) {
+                                        Toast.makeText(MainActivity.this, "Delete Succesfully", Toast.LENGTH_SHORT).show();
+                                    }
+                                }).addOnFailureListener(new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        Toast.makeText(MainActivity.this, "Error", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                                return false;
+                            }
+                        });
+                        menu.show();
                     }
                 });
             }
@@ -100,7 +165,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(getApplicationContext(),AddNote.class);
+                Intent intent = new Intent(getApplicationContext(), AddNote.class);
                 startActivity(intent);
             }
         });
@@ -112,7 +177,16 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         switch (item.getItemId()){
             case R.id.createNote:
                 startActivity(new Intent(getApplicationContext(),AddNote.class));
+                break;
 
+            case R.id.logout:
+                FirebaseAuth.getInstance().signOut();
+                startActivity(new Intent(getApplicationContext(), LoginActivity.class));
+                break;
+
+            case R.id.userprofile:
+                startActivity(new Intent(getApplicationContext(), UserProfile.class));
+                break;
 
             default:
                 Toast.makeText(this, "", Toast.LENGTH_SHORT).show();

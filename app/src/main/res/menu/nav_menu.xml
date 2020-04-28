@@ -14,6 +14,10 @@
                 android:id="@+id/synNote"
                 android:icon="@drawable/ic_sync_black_24dp"
                 android:title="Syn Notes" />
+            <item
+                android:id="@+id/userprofile"
+                android:icon="@drawable/ic_person_black_24dp"
+                android:title="Profile" />
         </menu>
     </item>
 
